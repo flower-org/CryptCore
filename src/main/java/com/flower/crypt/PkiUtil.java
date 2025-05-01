@@ -77,6 +77,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.HexFormat;
 import java.util.List;
 
 public class PkiUtil {
@@ -588,7 +589,7 @@ public class PkiUtil {
     }
 
     public static String getSha256Hex(byte[] bytes) throws NoSuchAlgorithmException {
-        return HexTool.bytesToHex(getSha256(bytes));
+        return HexFormat.of().formatHex(getSha256(bytes));
     }
 
     public static byte[] getSha256(File file) throws NoSuchAlgorithmException, IOException {
@@ -603,7 +604,11 @@ public class PkiUtil {
     }
 
     public static String getSha256Hex(File file) throws NoSuchAlgorithmException, IOException {
-        return HexTool.bytesToHex(getSha256(file));
+        return HexFormat.of().formatHex(getSha256(file));
+    }
+
+    public static String toHex(byte[] bytes) throws NoSuchAlgorithmException, IOException {
+        return HexFormat.of().formatHex(bytes);
     }
 
     public static X509Certificate signCsr(PKCS10CertificationRequest csr,
@@ -716,5 +721,10 @@ public class PkiUtil {
                 fos.write(outputBytes);
             }
         }
+    }
+
+    public static final InsecureTrustManagerFactory INSTANCE = new InsecureTrustManagerFactory();
+    public static TrustManagerFactory getInsecureTrustManagerFactory() {
+        return InsecureTrustManagerFactory.INSTANCE;
     }
 }

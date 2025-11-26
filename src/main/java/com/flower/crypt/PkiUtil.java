@@ -429,8 +429,12 @@ public class PkiUtil {
     }
 
     public static KeyPair generateRsa2048KeyPair() throws NoSuchAlgorithmException {
+        return generateRsaKeyPair(2048);
+    }
+
+    public static KeyPair generateRsaKeyPair(int keysize) throws NoSuchAlgorithmException {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(RSA);
-        keyPairGenerator.initialize(2048);
+        keyPairGenerator.initialize(keysize);
         return keyPairGenerator.generateKeyPair();
     }
 

@@ -12,6 +12,7 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.SecureRandom;
+import java.util.random.RandomGenerator;
 
 public class Cryptor {
     private static final int AES_KEY_SIZE_BITS = 256;
@@ -89,16 +90,24 @@ public class Cryptor {
 
     // ----------------------------------------------------------------
 
-    public static byte[] generateAESIV() {
+    public static byte[] generateAESIV(RandomGenerator random) {
         byte[] iv = new byte[IV_LENGTH_BYTES];
-        new SecureRandom().nextBytes(iv);
+        random.nextBytes(iv);
         return iv;
     }
 
-    public static byte[] generateAESKeyRaw() {
+    public static byte[] generateAESKeyRaw(RandomGenerator random) {
         byte[] iv = new byte[AES_KEY_SIZE_BYTES];
-        new SecureRandom().nextBytes(iv);
+        random.nextBytes(iv);
         return iv;
+    }
+
+    public static byte[] generateAESIV() {
+        return generateAESIV(new SecureRandom());
+    }
+
+    public static byte[] generateAESKeyRaw() {
+        return generateAESKeyRaw(new SecureRandom());
     }
 
     public static SecretKey generateAESKey() throws Exception {

@@ -86,6 +86,7 @@ public class PkiUtil {
     public static final String AES = "AES";
     public static final String AES_CBC = "AES/CBC/PKCS5Padding";
     public static final String RSA = "RSA";
+    public static final String SIGNATURE_SHA256_WITH_RSA = "SHA256WithRSA";
 
     public static TrustManagerFactory getSystemTrustManager() {
         try {
@@ -518,14 +519,14 @@ public class PkiUtil {
     }
 
     public static byte[] signData(byte[] data, PrivateKey privateKey) throws NoSuchAlgorithmException, SignatureException, InvalidKeyException {
-        Signature signature = Signature.getInstance("SHA256WithRSA");
+        Signature signature = Signature.getInstance(SIGNATURE_SHA256_WITH_RSA);
         signature.initSign(privateKey);
         signature.update(data);
         return signature.sign();
     }
 
     public static byte[] signData(File file, PrivateKey privateKey) throws NoSuchAlgorithmException, SignatureException, InvalidKeyException, IOException {
-        Signature signature = Signature.getInstance("SHA256withRSA");
+        Signature signature = Signature.getInstance(SIGNATURE_SHA256_WITH_RSA);
         signature.initSign(privateKey);
 
         // Read the file in chunks
@@ -540,15 +541,39 @@ public class PkiUtil {
         return signature.sign();
     }
 
+    public static byte[] signData(InputStream data, PrivateKey privateKey) throws InvalidKeyException, NoSuchAlgorithmException, IOException, SignatureException {
+        Signature signature = Signature.getInstance(SIGNATURE_SHA256_WITH_RSA);
+        signature.initSign(privateKey);
+
+        byte[] buffer = new byte[8192]; // 8KB chunks
+        int n;
+        while ((n = data.read(buffer)) != -1) {
+            signature.update(buffer, 0, n);
+        }
+        return signature.sign();
+    }
+
+    public static boolean verifySignature(InputStream data, byte[] sign, PublicKey publicKey) throws NoSuchAlgorithmException, InvalidKeyException, IOException, SignatureException {
+        Signature signature = Signature.getInstance(SIGNATURE_SHA256_WITH_RSA);
+        signature.initVerify(publicKey);
+
+        byte[] buffer = new byte[8192];
+        int n;
+        while ((n = data.read(buffer)) != -1) {
+            signature.update(buffer, 0, n);
+        }
+        return signature.verify(sign);
+    }
+
     public static boolean verifySignature(byte[] data, byte[] sign, PublicKey publicKey) throws NoSuchAlgorithmException, SignatureException, InvalidKeyException {
-        Signature signature = Signature.getInstance("SHA256WithRSA");
+        Signature signature = Signature.getInstance(SIGNATURE_SHA256_WITH_RSA);
         signature.initVerify(publicKey);
         signature.update(data);
         return signature.verify(sign);
     }
 
     public static boolean verifySignature(File file, byte[] signatureBytes, PublicKey publicKey) throws InvalidKeyException, IOException, SignatureException, NoSuchAlgorithmException {
-        Signature signature = Signature.getInstance("SHA256withRSA");
+        Signature signature = Signature.getInstance(SIGNATURE_SHA256_WITH_RSA);
         signature.initVerify(publicKey);
 
         // Read the file in chunks
@@ -636,7 +661,7 @@ public class PkiUtil {
                     subjectPublicKey
             );
 
-            ContentSigner signer = new JcaContentSignerBuilder("SHA256withRSA").build(caPrivateKey);
+            ContentSigner signer = new JcaContentSignerBuilder(SIGNATURE_SHA256_WITH_RSA).build(caPrivateKey);
             X509CertificateHolder certHolder = certBuilder.build(signer);
 
             return new JcaX509CertificateConverter().getCertificate(certHolder);

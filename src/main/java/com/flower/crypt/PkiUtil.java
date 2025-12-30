@@ -40,6 +40,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.math.BigInteger;
@@ -683,8 +684,8 @@ public class PkiUtil {
         return (PKCS10CertificationRequest)pemParser.readObject();
     }
 
-    public static void encryptFile(SecretKeySpec secretKey, @Nullable IvParameterSpec iv, FileInputStream fis,
-                                   FileOutputStream fos, int length) throws NoSuchPaddingException, NoSuchAlgorithmException,
+    public static void encryptFile(SecretKeySpec secretKey, @Nullable IvParameterSpec iv, InputStream fis,
+                                   OutputStream fos, @Nullable Integer length) throws NoSuchPaddingException, NoSuchAlgorithmException,
             InvalidAlgorithmParameterException, InvalidKeyException, IOException, IllegalBlockSizeException, BadPaddingException {
         Cipher cipher = Cipher.getInstance(AES_CBC);
         if (iv == null) {
@@ -698,9 +699,9 @@ public class PkiUtil {
         int totalBytesRead = 0;
 
         // Read and encrypt in chunks until the specified length is reached
-        while (totalBytesRead < length && (bytesRead = fis.read(inputBytes)) != -1) {
+        while ((length == null || totalBytesRead < length) && (bytesRead = fis.read(inputBytes)) != -1) {
             // Only process the bytes up to the specified length
-            int bytesToProcess = Math.min(bytesRead, length - totalBytesRead);
+            int bytesToProcess = Math.min(bytesRead, length == null ? Integer.MAX_VALUE : length - totalBytesRead);
             byte[] outputBytes = cipher.update(inputBytes, 0, bytesToProcess);
             if (outputBytes != null) {
                 fos.write(outputBytes);
@@ -717,8 +718,8 @@ public class PkiUtil {
         }
     }
 
-    public static void decryptFile(SecretKeySpec secretKey, @Nullable IvParameterSpec iv, FileInputStream fis,
-                                   FileOutputStream fos, int length) throws NoSuchPaddingException, NoSuchAlgorithmException,
+    public static void decryptFile(SecretKeySpec secretKey, @Nullable IvParameterSpec iv, InputStream fis,
+                                   OutputStream fos, @Nullable Integer length) throws NoSuchPaddingException, NoSuchAlgorithmException,
             InvalidAlgorithmParameterException, InvalidKeyException, IOException, IllegalBlockSizeException, BadPaddingException {
         Cipher cipher = Cipher.getInstance(AES_CBC);
         if (iv == null) {
@@ -732,9 +733,9 @@ public class PkiUtil {
         int totalBytesRead = 0;
 
         // Read and decrypt in chunks until the specified length is reached
-        while (totalBytesRead < length && (bytesRead = fis.read(inputBytes)) != -1) {
+        while ((length == null || totalBytesRead < length) && (bytesRead = fis.read(inputBytes)) != -1) {
             // Only process the bytes up to the specified length
-            int bytesToProcess = Math.min(bytesRead, length - totalBytesRead);
+            int bytesToProcess = Math.min(bytesRead, length == null ? Integer.MAX_VALUE : length - totalBytesRead);
             byte[] outputBytes = cipher.update(inputBytes, 0, bytesToProcess);
             if (outputBytes != null) {
                 fos.write(outputBytes);

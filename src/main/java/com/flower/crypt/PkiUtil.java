@@ -491,11 +491,16 @@ public class PkiUtil {
         return new String(decryptedBytes);
     }
 
-    public static byte[] encrypt(byte[] data, PublicKey publicKey)
+    public static byte[] encrypt(byte[] data, PublicKey publicKey, String transformation)
             throws NoSuchPaddingException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
-        Cipher cipher = Cipher.getInstance(RSA);
+        Cipher cipher = Cipher.getInstance(transformation);
         cipher.init(Cipher.ENCRYPT_MODE, publicKey);
         return cipher.doFinal(data);
+    }
+
+    public static byte[] encrypt(byte[] data, PublicKey publicKey)
+            throws NoSuchPaddingException, NoSuchAlgorithmException, IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
+        return encrypt(data, publicKey, RSA);
     }
 
     public static byte[] decrypt(byte[] encryptedData, PrivateKey privateKey)

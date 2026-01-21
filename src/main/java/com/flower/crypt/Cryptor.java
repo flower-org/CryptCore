@@ -70,8 +70,13 @@ public class Cryptor {
 
     public static byte[] encryptAES(byte[] data, SecretKey key, byte[] iv) throws Exception {
         assert(iv.length == IV_LENGTH_BYTES);
+        return encryptAES(data, key, "AES/CBC/PKCS5Padding", iv);
+    }
 
-        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+    public static byte[] encryptAES(byte[] data, SecretKey key, String transform, byte[] iv) throws Exception {
+        assert(iv.length == IV_LENGTH_BYTES);
+
+        Cipher cipher = Cipher.getInstance(transform);
         IvParameterSpec ivParams = new IvParameterSpec(iv);
         cipher.init(Cipher.ENCRYPT_MODE, key, ivParams);
 
@@ -79,9 +84,13 @@ public class Cryptor {
     }
 
     public static byte[] decryptAES(byte[] encryptedData, SecretKey key, byte[] iv) throws Exception {
+        return decryptAES(encryptedData, key, "AES/CBC/PKCS5Padding", iv);
+    }
+
+    public static byte[] decryptAES(byte[] encryptedData, SecretKey key, String transform, byte[] iv) throws Exception {
         assert(iv.length == IV_LENGTH_BYTES);
 
-        Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
+        Cipher cipher = Cipher.getInstance(transform);
         IvParameterSpec ivParams = new IvParameterSpec(iv);
         cipher.init(Cipher.DECRYPT_MODE, key, ivParams);
 

@@ -89,6 +89,18 @@ public class PkiUtil {
     public static final String RSA = "RSA";
     public static final String SIGNATURE_SHA256_WITH_RSA = "SHA256WithRSA";
 
+    // ASN.1 DER encoding for SHA-256 DigestInfo prefix
+    // This is: SEQUENCE { SEQUENCE { OID sha256, NULL }, OCTET STRING [32] }
+    // The last 32 bytes are the hash itself.
+    private static final byte[] SHA256_DIGEST_INFO_PREFIX = new byte[] {
+            0x30, 0x31,                         // SEQUENCE, length 49
+            0x30, 0x0d,                         // SEQUENCE, length 13
+            0x06, 0x09,                         // OID, length 9
+            0x60, (byte)0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01, // 2.16.840.1.101.3.4.2.1 (SHA-256)
+            0x05, 0x00,                         // NULL
+            0x04, 0x20                          // OCTET STRING, length 32 (the hash goes here)
+    };
+
     public static TrustManagerFactory getSystemTrustManager() {
         try {
             TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
@@ -531,6 +543,26 @@ public class PkiUtil {
         return signature.sign();
     }
 
+    /** Method optimized for token usage - calculates SHA256 outside of token */
+    public static byte[] signDataQuick(byte[] data, PrivateKey privateKey)
+            throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
+
+        // Step 1: Compute SHA-256 digest in software
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        byte[] hash = md.digest(data);
+
+        // Step 2: Construct DigestInfo = prefix + hash
+        byte[] digestInfo = new byte[SHA256_DIGEST_INFO_PREFIX.length + hash.length];
+        System.arraycopy(SHA256_DIGEST_INFO_PREFIX, 0, digestInfo, 0, SHA256_DIGEST_INFO_PREFIX.length);
+        System.arraycopy(hash, 0, digestInfo, SHA256_DIGEST_INFO_PREFIX.length, hash.length);
+
+        // Step 3: Sign DigestInfo using raw RSA
+        Signature signature = Signature.getInstance("NONEwithRSA");
+        signature.initSign(privateKey);
+        signature.update(digestInfo);
+        return signature.sign();
+    }
+
     public static byte[] signData(File file, PrivateKey privateKey) throws NoSuchAlgorithmException, SignatureException, InvalidKeyException, IOException {
         Signature signature = Signature.getInstance(SIGNATURE_SHA256_WITH_RSA);
         signature.initSign(privateKey);
@@ -556,6 +588,31 @@ public class PkiUtil {
         while ((n = data.read(buffer)) != -1) {
             signature.update(buffer, 0, n);
         }
+        return signature.sign();
+    }
+
+    /** Method optimized for token usage - calculates SHA256 outside of token */
+    public static byte[] signDataQuick(InputStream data, PrivateKey privateKey)
+            throws InvalidKeyException, NoSuchAlgorithmException, IOException, SignatureException {
+
+        // Step 1: Compute SHA-256 digest in software
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        byte[] buffer = new byte[8192];
+        int n;
+        while ((n = data.read(buffer)) != -1) {
+            md.update(buffer, 0, n);
+        }
+        byte[] hash = md.digest();
+
+        // Step 2: Construct DigestInfo = prefix + hash
+        byte[] digestInfo = new byte[SHA256_DIGEST_INFO_PREFIX.length + hash.length];
+        System.arraycopy(SHA256_DIGEST_INFO_PREFIX, 0, digestInfo, 0, SHA256_DIGEST_INFO_PREFIX.length);
+        System.arraycopy(hash, 0, digestInfo, SHA256_DIGEST_INFO_PREFIX.length, hash.length);
+
+        // Step 3: Sign DigestInfo using raw RSA
+        Signature signature = Signature.getInstance("NONEwithRSA");
+        signature.initSign(privateKey);
+        signature.update(digestInfo);
         return signature.sign();
     }
 
